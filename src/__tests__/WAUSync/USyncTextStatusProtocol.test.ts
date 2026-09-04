@@ -25,7 +25,7 @@ describe('USyncTextStatusProtocol', () => {
 			content: [
 				{
 					tag: 'emoji',
-					attrs: { content: '🎵' }
+					attrs: { content: '\u{1F3B5}' }
 				}
 			]
 		}
@@ -33,7 +33,7 @@ describe('USyncTextStatusProtocol', () => {
 		const parsed = protocol.parser(node)
 		expect(parsed).toEqual({
 			text: 'Listening to: Redbone — Childish Gambino',
-			emoji: '🎵',
+			emoji: '\u{1F3B5}',
 			ephemeralDurationSeconds: 86400,
 			lastUpdateTime: new Date(updateTimeSeconds * 1000)
 		})
@@ -56,7 +56,7 @@ describe('USyncTextStatusProtocol', () => {
 		})
 	})
 
-	it('throws on error node child', () => {
+	it('returns undefined on error node child to avoid failing other USync protocols', () => {
 		const node: BinaryNode = {
 			tag: 'text_status',
 			attrs: {},
@@ -68,6 +68,6 @@ describe('USyncTextStatusProtocol', () => {
 			]
 		}
 
-		expect(() => protocol.parser(node)).toThrow('Not found')
+		expect(protocol.parser(node)).toBeUndefined()
 	})
 })

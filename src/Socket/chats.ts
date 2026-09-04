@@ -28,7 +28,7 @@ import type {
 import { ALL_WA_PATCH_NAMES } from '../Types'
 import type { QuickReplyAction } from '../Types/Bussines.js'
 import type { LabelActionBody } from '../Types/Label'
-import { QueryIds, type TextStatusInput, XWAPaths } from '../Types/Mex'
+import { QueryIds, type TextStatusInput, type TextStatusUpdateResponse, XWAPaths } from '../Types/Mex'
 import { SyncState } from '../Types/State'
 import {
 	chatModificationToAppPatch,
@@ -118,17 +118,23 @@ export const executeTextStatusUpdate = async (
 	status: string | TextStatusInput,
 	query: (node: BinaryNode) => Promise<BinaryNode>,
 	generateMessageTag: () => string,
-	logger?: ILogger
+	logger: ILogger
 ) => {
 	const { mexInput, legacyStatusText } = buildTextStatusUpdateContent(status)
 
-	await executeWMexQuery(
-		{ input: mexInput },
-		QueryIds.UPDATE_TEXT_STATUS,
-		XWAPaths.xwa2_update_text_status,
-		query,
-		generateMessageTag
-	)
+	let mexError: unknown
+	try {
+		await executeWMexQuery<TextStatusUpdateResponse>(
+			{ input: mexInput },
+			QueryIds.UPDATE_TEXT_STATUS,
+			XWAPaths.xwa2_update_text_status,
+			query,
+			generateMessageTag
+		)
+	} catch (error) {
+		mexError = error
+		logger.warn({ err: error }, 'failed to update modern text status via MEX, falling back to legacy status')
+	}
 
 	try {
 		await query({
@@ -147,7 +153,11 @@ export const executeTextStatusUpdate = async (
 			]
 		})
 	} catch (error) {
-		logger?.warn({ err: error }, 'failed to update legacy profile status')
+		if (mexError) {
+			throw mexError
+		}
+
+		logger.warn({ err: error }, 'failed to update legacy profile status')
 	}
 }
 

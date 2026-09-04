@@ -1,5 +1,5 @@
 import type { USyncQueryProtocol } from '../../Types/USync'
-import { assertNodeErrorFree, type BinaryNode, getBinaryNodeChild } from '../../WABinary'
+import { type BinaryNode, getBinaryNodeChild } from '../../WABinary'
 
 export type TextStatusData = {
 	text?: string
@@ -24,7 +24,10 @@ export class USyncTextStatusProtocol implements USyncQueryProtocol {
 
 	parser(node: BinaryNode): TextStatusData | undefined {
 		if (node.tag === 'text_status') {
-			assertNodeErrorFree(node)
+			if (getBinaryNodeChild(node, 'error')) {
+				return undefined
+			}
+
 			const text = node.attrs?.text
 			const emojiChild = getBinaryNodeChild(node, 'emoji')
 			const emoji = emojiChild?.attrs?.content

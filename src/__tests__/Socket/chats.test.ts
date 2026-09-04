@@ -59,16 +59,16 @@ describe('buildTextStatusUpdateContent', () => {
 	it('formats object input with emoji and ephemeral duration', () => {
 		const result = buildTextStatusUpdateContent({
 			text: 'Working remotely',
-			emoji: '🏠',
+			emoji: '\u{1F3E0}',
 			ephemeralDuration: 86400
 		})
 		expect(result).toEqual({
 			mexInput: {
 				text: 'Working remotely',
-				emoji: { content: '🏠' },
+				emoji: { content: '\u{1F3E0}' },
 				ephemeral_duration_sec: 86400
 			},
-			legacyStatusText: '🏠 Working remotely'
+			legacyStatusText: '\u{1F3E0} Working remotely'
 		})
 	})
 
@@ -108,15 +108,15 @@ describe('buildTextStatusUpdateContent', () => {
 
 	it('formats emoji-only status with default 24h ephemeral duration', () => {
 		const result = buildTextStatusUpdateContent({
-			emoji: '🚀'
+			emoji: '\u{1F680}'
 		})
 		expect(result).toEqual({
 			mexInput: {
 				text: null,
-				emoji: { content: '🚀' },
+				emoji: { content: '\u{1F680}' },
 				ephemeral_duration_sec: 86400
 			},
-			legacyStatusText: '🚀'
+			legacyStatusText: '\u{1F680}'
 		})
 	})
 })
@@ -207,7 +207,7 @@ describe('executeTextStatusUpdate', () => {
 		await executeTextStatusUpdate(
 			{
 				text: 'Busy working',
-				emoji: '💻',
+				emoji: '\u{1F4BB}',
 				ephemeralDuration: 7200
 			},
 			mockQuery,
@@ -225,7 +225,7 @@ describe('executeTextStatusUpdate', () => {
 			variables: {
 				input: {
 					text: 'Busy working',
-					emoji: { content: '💻' },
+					emoji: { content: '\u{1F4BB}' },
 					ephemeral_duration_sec: 7200
 				}
 			}
@@ -234,7 +234,7 @@ describe('executeTextStatusUpdate', () => {
 		// 2. Verify legacy status payload joins emoji and text
 		const legacyQuery = queriesSent[1]!
 		const statusChild = (legacyQuery.content as BinaryNode[])[0]!
-		expect(statusChild.content!.toString()).toBe('💻 Busy working')
+		expect(statusChild.content!.toString()).toBe('\u{1F4BB} Busy working')
 	})
 
 	it('handles clearing status when empty string is passed', async () => {
@@ -310,11 +310,13 @@ describe('executeTextStatusUpdate', () => {
 			throw new Error('legacy status failed')
 		})
 
-		await expect(executeTextStatusUpdate('Hello', mockQuery, () => 'tag_err', mockLogger)).resolves.not.toThrow()
+		await expect(executeTextStatusUpdate('Hello', mockQuery, () => 'tag_err', mockLogger)).resolves.toBeUndefined()
 	})
 
-	it('throws error when primary MEX query fails', async () => {
+	it('falls back to legacy status query when primary MEX query fails', async () => {
+		const queriesSent: BinaryNode[] = []
 		const mockQuery = jest.fn(async (node: BinaryNode) => {
+			queriesSent.push(node)
 			if (node.attrs.xmlns === 'w:mex') {
 				return {
 					tag: 'iq',
@@ -329,6 +331,29 @@ describe('executeTextStatusUpdate', () => {
 			}
 
 			return { tag: 'iq', attrs: { type: 'result' } } as BinaryNode
+		})
+
+		await expect(executeTextStatusUpdate('Hello', mockQuery, () => 'tag_err', mockLogger)).resolves.toBeUndefined()
+		expect(queriesSent).toHaveLength(2)
+		expect(queriesSent[1]!.attrs.xmlns).toBe('status')
+	})
+
+	it('throws error when both primary MEX query and legacy query fail', async () => {
+		const mockQuery = jest.fn(async (node: BinaryNode) => {
+			if (node.attrs.xmlns === 'w:mex') {
+				return {
+					tag: 'iq',
+					attrs: { type: 'error' },
+					content: [
+						{
+							tag: 'error',
+							attrs: { code: '500', text: 'internal error' }
+						}
+					]
+				} as BinaryNode
+			}
+
+			throw new Error('legacy status query failed')
 		})
 
 		await expect(executeTextStatusUpdate('Hello', mockQuery, () => 'tag_err', mockLogger)).rejects.toThrow()
