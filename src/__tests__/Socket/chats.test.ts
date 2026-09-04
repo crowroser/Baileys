@@ -45,12 +45,12 @@ describe('buildProfilePictureQueryContent', () => {
 })
 
 describe('buildTextStatusUpdateContent', () => {
-	it('formats plain string input with default 0 ephemeral duration', () => {
+	it('formats plain string input with default 24h (86400s) ephemeral duration', () => {
 		const result = buildTextStatusUpdateContent('Available')
 		expect(result).toEqual({
 			mexInput: {
 				text: 'Available',
-				ephemeral_duration_sec: 0
+				ephemeral_duration_sec: 86400
 			},
 			legacyStatusText: 'Available'
 		})
@@ -92,7 +92,7 @@ describe('buildTextStatusUpdateContent', () => {
 		})
 	})
 
-	it('formats emoji-only status', () => {
+	it('formats emoji-only status with default 24h ephemeral duration', () => {
 		const result = buildTextStatusUpdateContent({
 			emoji: '🚀'
 		})
@@ -100,7 +100,7 @@ describe('buildTextStatusUpdateContent', () => {
 			mexInput: {
 				text: null,
 				emoji: { content: '🚀' },
-				ephemeral_duration_sec: 0
+				ephemeral_duration_sec: 86400
 			},
 			legacyStatusText: '🚀'
 		})
@@ -150,7 +150,7 @@ describe('executeTextStatusUpdate', () => {
 			variables: {
 				input: {
 					text: 'Listening to: Redbone — Childish Gambino',
-					ephemeral_duration_sec: 0
+					ephemeral_duration_sec: 86400
 				}
 			}
 		})

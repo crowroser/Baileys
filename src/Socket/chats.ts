@@ -82,10 +82,18 @@ export const buildProfilePictureQueryContent = (
 export const buildTextStatusUpdateContent = (status: string | TextStatusInput) => {
 	const text = typeof status === 'string' ? status : (status.text ?? null)
 	const emoji = typeof status === 'object' && status.emoji ? status.emoji : undefined
-	const ephemeralDuration =
-		typeof status === 'object' && typeof status.ephemeralDuration === 'number' ? status.ephemeralDuration : 0
-
 	const textStatusString = text && text.trim().length > 0 ? text : null
+
+	// Default ephemeral duration for text status is 24 hours (86400 seconds).
+	// Meta's GraphQL server rejects ephemeral_duration_sec: 0 with 400 Bad Request when setting a status.
+	// Only when clearing a status (null text and no emoji) is duration set to 0.
+	const isClearing = !textStatusString && !emoji
+	const ephemeralDuration = isClearing
+		? 0
+		: typeof status === 'object' && typeof status.ephemeralDuration === 'number'
+			? status.ephemeralDuration
+			: 86400
+
 	const mexInput: {
 		text: string | null
 		ephemeral_duration_sec: number
