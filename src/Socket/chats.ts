@@ -90,7 +90,7 @@ export const buildTextStatusUpdateContent = (status: string | TextStatusInput) =
 	const isClearing = !textStatusString && !emoji
 	const ephemeralDuration = isClearing
 		? 0
-		: typeof status === 'object' && typeof status.ephemeralDuration === 'number'
+		: typeof status === 'object' && typeof status.ephemeralDuration === 'number' && status.ephemeralDuration > 0
 			? status.ephemeralDuration
 			: 86400
 

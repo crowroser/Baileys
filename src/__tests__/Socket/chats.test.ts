@@ -72,6 +72,20 @@ describe('buildTextStatusUpdateContent', () => {
 		})
 	})
 
+	it('safely defaults to 86400s when 0 ephemeral duration is passed with non-empty text', () => {
+		const result = buildTextStatusUpdateContent({
+			text: 'Available',
+			ephemeralDuration: 0
+		})
+		expect(result).toEqual({
+			mexInput: {
+				text: 'Available',
+				ephemeral_duration_sec: 86400
+			},
+			legacyStatusText: 'Available'
+		})
+	})
+
 	it('handles empty string or whitespace clearing text status', () => {
 		const resultEmpty = buildTextStatusUpdateContent('')
 		expect(resultEmpty).toEqual({
