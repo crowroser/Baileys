@@ -358,4 +358,25 @@ describe('executeTextStatusUpdate', () => {
 
 		await expect(executeTextStatusUpdate('Hello', mockQuery, () => 'tag_err', mockLogger)).rejects.toThrow()
 	})
+
+	it('throws error when primary MEX fails and legacy query times out returning undefined', async () => {
+		const mockQuery = jest.fn(async (node: BinaryNode) => {
+			if (node.attrs.xmlns === 'w:mex') {
+				return {
+					tag: 'iq',
+					attrs: { type: 'error' },
+					content: [
+						{
+							tag: 'error',
+							attrs: { code: '500', text: 'internal error' }
+						}
+					]
+				} as BinaryNode
+			}
+
+			return undefined as unknown as BinaryNode
+		})
+
+		await expect(executeTextStatusUpdate('Hello', mockQuery, () => 'tag_err', mockLogger)).rejects.toThrow()
+	})
 })

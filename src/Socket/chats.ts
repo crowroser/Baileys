@@ -137,7 +137,7 @@ export const executeTextStatusUpdate = async (
 	}
 
 	try {
-		await query({
+		const legacyResult = await query({
 			tag: 'iq',
 			attrs: {
 				to: S_WHATSAPP_NET,
@@ -152,12 +152,15 @@ export const executeTextStatusUpdate = async (
 				}
 			]
 		})
+
+		if (!legacyResult) {
+			throw new Boom('Legacy status query failed', { statusCode: 500 })
+		}
 	} catch (error) {
+		logger.warn({ err: error }, 'failed to update legacy profile status')
 		if (mexError) {
 			throw mexError
 		}
-
-		logger.warn({ err: error }, 'failed to update legacy profile status')
 	}
 }
 
